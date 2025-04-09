@@ -1,5 +1,6 @@
 <?php
 // Script d'installation web pour n8n
+session_start();
 
 // Protection par mot de passe - à modifier
 $password = "n8n-install-password";
@@ -8,7 +9,6 @@ $password = "n8n-install-password";
 $authorized = false;
 if (isset($_POST['password']) && $_POST['password'] === $password) {
     $authorized = true;
-    session_start();
     $_SESSION['authorized'] = true;
 } elseif (isset($_SESSION['authorized']) && $_SESSION['authorized'] === true) {
     $authorized = true;
@@ -207,7 +207,7 @@ if ($authorized && isset($_POST['action'])) {
         <?php if (!$authorized): ?>
         <div class="step">
             <h2>Authentification</h2>
-            <form method="post">
+            <form method="post" action="web-installer.php">
                 <p>Veuillez entrer le mot de passe d'installation:</p>
                 <input type="password" name="password" required>
                 <button type="submit" class="button">Connexion</button>
@@ -218,7 +218,7 @@ if ($authorized && isset($_POST['action'])) {
         <div class="step">
             <h2>Étape 1: Vérification des prérequis</h2>
             <p>Vérifiez que votre serveur dispose des prérequis nécessaires pour installer n8n.</p>
-            <form method="post">
+            <form method="post" action="web-installer.php">
                 <input type="hidden" name="action" value="check_requirements">
                 <button type="submit" class="button">Vérifier les prérequis</button>
             </form>
@@ -227,7 +227,7 @@ if ($authorized && isset($_POST['action'])) {
         <div class="step">
             <h2>Étape 2: Installation de n8n</h2>
             <p>Installez n8n avec Docker et Docker Compose.</p>
-            <form method="post">
+            <form method="post" action="web-installer.php">
                 <input type="hidden" name="action" value="start_installation">
                 <button type="submit" class="button">Installer n8n</button>
             </form>
@@ -236,7 +236,7 @@ if ($authorized && isset($_POST['action'])) {
         <div class="step">
             <h2>Étape 3: Configuration de Nginx</h2>
             <p>Configurez Nginx pour accéder à n8n via votre domaine.</p>
-            <form method="post">
+            <form method="post" action="web-installer.php">
                 <input type="hidden" name="action" value="setup_nginx">
                 <button type="submit" class="button">Configurer Nginx</button>
             </form>
