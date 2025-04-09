@@ -1,77 +1,82 @@
-# Déploiement de n8n sur OVH
+# Installation de n8n sur OVH
 
-Ce dépôt contient les fichiers nécessaires pour déployer n8n sur un serveur OVH via GitHub Actions.
+Ce dépôt contient des scripts pour installer et exécuter n8n sur un hébergement OVH.
 
-## Déploiement rapide (automatique)
+## Prérequis
 
-Pour déployer automatiquement n8n sur votre serveur OVH, suivez les instructions dans [DEPLOYMENT.md](DEPLOYMENT.md).
+- Un hébergement web OVH avec PHP 7.3+ et Node.js 16.9.0+
+- La fonction `exec()` activée en PHP
+- Accès FTP/SFTP à votre espace d'hébergement
 
-Ce déploiement automatique effectuera toutes les étapes nécessaires via GitHub Actions :
-1. Transfert des fichiers via FTP
-2. Configuration des clés de chiffrement 
-3. Préparation des fichiers d'installation
+## Installation
 
-## Installation via l'interface web
+### 1. Vérification des prérequis
 
-Une fois les fichiers déployés, accédez à l'URL suivante pour terminer l'installation via le navigateur :
-
-```
-https://latry.consulting/projet/n8n/web-installer.php
-```
-
-Le mot de passe par défaut est : `n8n-install-password`
-
-Cette interface vous permettra de :
-1. Vérifier les prérequis du serveur
-2. Installer n8n avec Docker
-3. Configurer Nginx
-
-## Configuration
-
-Avant de déployer, vous devez configurer les variables d'environnement suivantes dans le Dockerfile et docker-compose.yml :
-
-- `N8N_ENCRYPTION_KEY` : Une clé de chiffrement unique pour sécuriser vos données (générée automatiquement lors de l'installation)
-- `WEBHOOK_URL` : L'URL de votre instance n8n (configurée par défaut à https://latry.consulting/projet/n8n)
-
-## Secrets GitHub nécessaires
-
-Pour que le déploiement automatique fonctionne, vous devez configurer les secrets suivants dans votre dépôt GitHub :
-
-- `FTP_USERNAME` : Votre nom d'utilisateur FTP OVH
-- `FTP_PASSWORD` : Votre mot de passe FTP OVH
-
-## Installation manuelle sur le serveur
-
-Après le déploiement FTP via GitHub Actions, connectez-vous à votre serveur OVH via SSH et exécutez les commandes suivantes :
-
-```bash
-cd /www/projet/n8n
-chmod 755 *.sh
-./init-after-deploy.sh
-```
-
-Pour des instructions détaillées, consultez [INSTALLATION_OVH.md](INSTALLATION_OVH.md).
-
-## Sauvegarde
-
-Les données de n8n sont stockées dans le volume Docker `n8n_data`. Pour sauvegarder vos données, vous pouvez utiliser le script de sauvegarde fourni :
-
-```bash
-./backup.sh
-```
-
-## Restauration
-
-Pour restaurer une sauvegarde, utilisez la commande suivante :
-
-```bash
-./restore.sh /chemin/vers/n8n_backup.tar.gz /chemin/vers/n8n_data.tar.gz
-```
-
-## Accès à n8n
-
-Une fois déployé, n8n sera accessible à l'adresse :
+Accédez à `check-node.php` dans votre navigateur pour vérifier que toutes les dépendances sont installées. Ce script vous indiquera si votre environnement est prêt pour n8n.
 
 ```
-https://latry.consulting/projet/n8n
-``` 
+https://votre-domaine.com/projet/n8n/check-node.php
+```
+
+Si Node.js ou NPM ne sont pas installés ou sont trop anciens, contactez le support OVH pour les faire mettre à jour.
+
+### 2. Installation automatique
+
+Accédez à `install-n8n.php` dans votre navigateur pour lancer l'installation automatique :
+
+```
+https://votre-domaine.com/projet/n8n/install-n8n.php
+```
+
+Ce script va :
+- Vérifier vos prérequis
+- Créer les fichiers de configuration nécessaires
+- Installer n8n via NPM
+- Générer des scripts de démarrage pour n8n
+
+L'installation peut prendre plusieurs minutes. Une fois terminée, le script vous fournira des instructions pour configurer une tâche cron.
+
+### 3. Configuration du Cron
+
+Pour démarrer n8n automatiquement et le maintenir en fonctionnement :
+
+1. Accédez à votre espace client OVH
+2. Allez dans la section 'Hébergement' > 'Tâches planifiées'
+3. Ajoutez une nouvelle tâche cron avec la commande :
+   ```
+   php /home/votre_utilisateur/www/projet/n8n/start-n8n.php
+   ```
+4. Configurez-la pour s'exécuter toutes les heures
+
+## Utilisation
+
+Accédez à n8n via :
+
+```
+https://votre-domaine.com/projet/n8n
+```
+
+## Fichiers inclus
+
+- `check-node.php` : Vérifie la disponibilité des dépendances
+- `install-n8n.php` : Script d'installation automatique
+- `start-n8n.php` : Script de démarrage pour n8n (généré automatiquement)
+- `.env` : Configuration de n8n (généré automatiquement)
+- `.htaccess` : Configuration du serveur web pour la redirection vers n8n
+- `package.json` : Définition des dépendances NPM
+
+## Problèmes connus
+
+- La gestion des processus en arrière-plan peut être limitée sur OVH
+- Certains hébergements mutualisés OVH peuvent avoir des restrictions sur l'utilisation des ressources
+
+Si n8n ne démarre pas correctement, vérifiez les fichiers de log :
+- `install-n8n.log`
+- `n8n-start.log`
+- `n8n-output.log`
+
+## Support
+
+Pour toute question ou problème, contactez :
+- Support OVH pour les questions liées à l'hébergement
+- [Documentation officielle de n8n](https://docs.n8n.io/) pour les questions sur n8n 

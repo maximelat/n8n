@@ -1,0 +1,49 @@
+# Protection des fichiers sensibles
+<FilesMatch "^\.env|package\.json|package-lock\.json|\.log$">
+  Order allow,deny
+  Deny from all
+</FilesMatch>
+
+# Permettre l'exécution des scripts PHP
+<FilesMatch "\.php$">
+  Allow from all
+</FilesMatch>
+
+# Redirection vers n8n s'il tourne sur le port 5678
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  
+  # Ne pas rediriger les fichiers PHP et ressources statiques
+  RewriteCond %{REQUEST_URI} !\.(php|js|css|png|jpg|gif|svg)$
+  
+  # Ne pas rediriger les fichiers qui existent réellement
+  RewriteCond %{REQUEST_FILENAME} !-f
+  
+  # Rediriger toutes les autres requêtes vers n8n
+  RewriteRule ^(.*)$ http://localhost:5678/$1 [P,L]
+</IfModule>
+
+# Configuration alternative avec mod_proxy si disponible
+<IfModule mod_proxy.c>
+  <IfModule mod_proxy_http.c>
+    # Ces directives ne seront appliquées que si le serveur ne gère pas déjà le mod_rewrite
+    <IfModule !mod_rewrite.c>
+      ProxyPreserveHost On
+      ProxyPass / http://localhost:5678/
+      ProxyPassReverse / http://localhost:5678/
+    </IfModule>
+  </IfModule>
+</IfModule>
+
+# Définir le fuseau horaire PHP
+<IfModule mod_php7.c>
+  php_value date.timezone Europe/Paris
+</IfModule>
+
+# Augmenter les limites PHP si nécessaire
+<IfModule mod_php7.c>
+  php_value upload_max_filesize 16M
+  php_value post_max_size 16M
+  php_value memory_limit 256M
+  php_value max_execution_time 300
+</IfModule> 
