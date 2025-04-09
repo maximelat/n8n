@@ -2,6 +2,10 @@
 
 # Script d'installation des certificats SSL avec Certbot
 
+# Définir le chemin du répertoire n8n
+N8N_DIR="$HOME/www/projet/n8n"
+cd "$N8N_DIR"
+
 # Puisque latry.consulting a déjà HTTPS, nous allons simplement configurer Nginx
 
 # Nom de domaine fixe
@@ -19,13 +23,13 @@ fi
 sed -i "s/votre-domaine.com/$DOMAIN_NAME/g" nginx-config.conf
 
 # Copie du fichier de configuration Nginx
-cp nginx-config.conf /etc/nginx/sites-available/$DOMAIN_NAME
-ln -sf /etc/nginx/sites-available/$DOMAIN_NAME /etc/nginx/sites-enabled/
+sudo cp nginx-config.conf /etc/nginx/sites-available/$DOMAIN_NAME
+sudo ln -sf /etc/nginx/sites-available/$DOMAIN_NAME /etc/nginx/sites-enabled/
 
 # Vérification de la syntaxe Nginx
-nginx -t
+sudo nginx -t
 
 # Redémarrage de Nginx
-systemctl restart nginx
+sudo systemctl restart nginx
 
 echo "Configuration Nginx terminée. Votre n8n est maintenant accessible via https://$DOMAIN_NAME/projet/n8n" 

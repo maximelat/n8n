@@ -18,6 +18,24 @@ if (isset($_POST['password']) && $_POST['password'] === $password) {
 $installationLog = [];
 $error = false;
 
+// Fonction pour détecter automatiquement le répertoire n8n
+function detectN8nDirectory() {
+    $possiblePaths = [
+        "/home/latrycf/www/projet/n8n/",  // Chemin absolu
+        "/www/projet/n8n/",              // Chemin FTP
+        getcwd() . "/"                   // Répertoire courant
+    ];
+    
+    foreach ($possiblePaths as $path) {
+        if (is_dir($path)) {
+            return $path;
+        }
+    }
+    
+    // Si aucun chemin n'est trouvé, utilisez le répertoire courant
+    return getcwd() . "/";
+}
+
 // Fonction pour générer une clé de chiffrement aléatoire
 function generateRandomKey($length = 32) {
     return bin2hex(random_bytes($length / 2));
@@ -44,12 +62,29 @@ if ($authorized && isset($_POST['action'])) {
         case 'prepare_files':
             $installationLog[] = "Préparation des fichiers d'installation...";
             
-            // Définir le chemin du répertoire n8n
-            $n8nDir = "/www/projet/n8n/";
+            // Détecter automatiquement le chemin correct
+            $n8nDir = detectN8nDirectory();
+            $installationLog[] = "✅ Chemin détecté automatiquement: $n8nDir";
             
             // Vérifier que le répertoire n8n existe
             if (!is_dir($n8nDir)) {
-                $installationLog[] = "❌ Le répertoire n8n n'existe pas.";
+                $installationLog[] = "❌ Le répertoire n8n n'existe pas: $n8nDir";
+                $error = true;
+                break;
+            }
+            
+            // Vérifier que certains fichiers essentiels existent pour confirmer que c'est le bon répertoire
+            $requiredFiles = ['docker-compose.yml', '.env.example', 'Dockerfile'];
+            $missingFiles = [];
+            foreach ($requiredFiles as $file) {
+                if (!file_exists($n8nDir . $file)) {
+                    $missingFiles[] = $file;
+                }
+            }
+            
+            if (!empty($missingFiles)) {
+                $installationLog[] = "❌ Fichiers essentiels manquants: " . implode(", ", $missingFiles);
+                $installationLog[] = "⚠️ Vérifiez que le chemin est correct: $n8nDir";
                 $error = true;
                 break;
             }
@@ -98,9 +133,13 @@ if ($authorized && isset($_POST['action'])) {
         case 'download_compose':
             $installationLog[] = "Téléchargement de docker-compose...";
             
+            // Détecter automatiquement le chemin
+            $n8nDir = detectN8nDirectory();
+            $installationLog[] = "✅ Chemin détecté automatiquement: $n8nDir";
+            
             // URL pour télécharger la dernière version de Docker Compose
             $url = "https://github.com/docker/compose/releases/download/v2.20.3/docker-compose-linux-x86_64";
-            $destinationPath = "/www/projet/n8n/docker-compose";
+            $destinationPath = $n8nDir . "docker-compose";
             
             // Télécharger Docker Compose
             if (file_put_contents($destinationPath, file_get_contents($url)) !== false) {
@@ -116,7 +155,11 @@ if ($authorized && isset($_POST['action'])) {
         case 'create_instructions':
             $installationLog[] = "Création des instructions d'installation manuelle...";
             
-            $instructionsFile = "/www/projet/n8n/INSTRUCTIONS.txt";
+            // Détecter automatiquement le chemin
+            $n8nDir = detectN8nDirectory();
+            $installationLog[] = "✅ Chemin détecté automatiquement: $n8nDir";
+            
+            $instructionsFile = $n8nDir . "INSTRUCTIONS.txt";
             $instructions = <<<EOT
 INSTRUCTIONS D'INSTALLATION MANUELLE POUR N8N
 =============================================
@@ -126,12 +169,12 @@ voici les étapes à suivre pour installer manuellement n8n sur votre serveur OV
 
 1. Connectez-vous à votre serveur via SSH:
    ```
-   ssh votre-utilisateur@latry.consulting
+   ssh latrycf@latry.consulting
    ```
 
 2. Naviguez vers le répertoire n8n:
    ```
-   cd /www/projet/n8n/
+   cd ~/www/projet/n8n/
    ```
 
 3. Assurez-vous que les scripts sont exécutables:

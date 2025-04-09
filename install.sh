@@ -2,6 +2,10 @@
 
 # Script d'installation de n8n sur serveur OVH
 
+# Définir le chemin du répertoire n8n
+N8N_DIR="$HOME/www/projet/n8n"
+cd "$N8N_DIR"
+
 # Vérification de Docker
 if ! command -v docker &> /dev/null
 then
@@ -17,8 +21,15 @@ fi
 if ! command -v docker-compose &> /dev/null
 then
     echo "Docker Compose n'est pas installé. Installation en cours..."
-    curl -L "https://github.com/docker/compose/releases/download/v2.20.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    chmod +x /usr/local/bin/docker-compose
+    # Vérifier si nous avons téléchargé Docker Compose avec l'installateur PHP
+    if [ -f "$N8N_DIR/docker-compose" ]; then
+        echo "Utilisation du Docker Compose téléchargé..."
+        sudo mv "$N8N_DIR/docker-compose" /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+    else
+        curl -L "https://github.com/docker/compose/releases/download/v2.20.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+    fi
     echo "Docker Compose a été installé."
 fi
 
@@ -28,13 +39,15 @@ if [ ! -f .env ]; then
     echo "Fichier .env créé."
 fi
 
-# Génération d'une clé de chiffrement aléatoire
-ENCRYPTION_KEY=$(openssl rand -hex 24)
-sed -i "s/votre_clef_de_chiffrement/$ENCRYPTION_KEY/g" .env
+# Génération d'une clé de chiffrement aléatoire si nécessaire
+if grep -q "votre_clef_de_chiffrement" .env; then
+    ENCRYPTION_KEY=$(openssl rand -hex 24)
+    sed -i "s/votre_clef_de_chiffrement/$ENCRYPTION_KEY/g" .env
+fi
 
 # URL prédéfinie pour n8n
 WEBHOOK_URL="https://latry.consulting/projet/n8n"
-sed -i "s|https://votre-domaine.com|$WEBHOOK_URL|g" .env
+sed -i "s|https://votre-domaine.com|$WEBHOOK_URL|g" .env 2>/dev/null || echo "URL déjà configurée."
 
 # Démarrage de n8n
 echo "Démarrage de n8n..."

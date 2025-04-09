@@ -17,6 +17,7 @@ services:
       - N8N_HOST=0.0.0.0
       - N8N_PROTOCOL=https
       - N8N_PATH=/projet/n8n
+      - N8N_USER_FOLDER=/home/node/.n8n
     volumes:
       - n8n_data:/home/node/.n8n
 

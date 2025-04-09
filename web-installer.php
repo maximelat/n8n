@@ -36,6 +36,27 @@ function execCommand($command, $workingDir = null) {
     ];
 }
 
+// Fonction pour détecter le répertoire n8n
+function detectN8nDirectory() {
+    $possiblePaths = [
+        "/home/latrycf/www/projet/n8n/",  // Chemin absolu
+        "/www/projet/n8n/",              // Chemin FTP
+        getcwd() . "/"                   // Répertoire courant
+    ];
+    
+    foreach ($possiblePaths as $path) {
+        if (is_dir($path)) {
+            return $path;
+        }
+    }
+    
+    // Si aucun chemin n'est trouvé, utilisez le répertoire courant
+    return getcwd() . "/";
+}
+
+// Détection du chemin n8n
+$n8nDir = detectN8nDirectory();
+
 // Actions d'installation
 $installationLog = [];
 $error = false;
@@ -65,7 +86,7 @@ if ($authorized && isset($_POST['action'])) {
             }
             
             // Vérifier les permissions
-            $permissionsResult = execCommand("chmod 755 /www/projet/n8n/*.sh");
+            $permissionsResult = execCommand("chmod 755 {$n8nDir}*.sh");
             if ($permissionsResult['returnVar'] !== 0) {
                 $installationLog[] = "❌ Impossible de changer les permissions des scripts.";
                 $error = true;
@@ -78,9 +99,10 @@ if ($authorized && isset($_POST['action'])) {
         case 'start_installation':
             // Démarrer l'installation
             $installationLog[] = "Démarrage de l'installation...";
+            $installationLog[] = "Utilisation du répertoire: {$n8nDir}";
             
             // Exécuter le script d'installation
-            $installResult = execCommand("/www/projet/n8n/install.sh");
+            $installResult = execCommand("{$n8nDir}install.sh");
             $installationLog[] = "Résultat de l'installation:";
             foreach ($installResult['output'] as $line) {
                 $installationLog[] = $line;
@@ -98,9 +120,10 @@ if ($authorized && isset($_POST['action'])) {
         case 'setup_nginx':
             // Configurer Nginx
             $installationLog[] = "Configuration de Nginx...";
+            $installationLog[] = "Utilisation du répertoire: {$n8nDir}";
             
             // Exécuter le script de configuration Nginx
-            $nginxResult = execCommand("sudo /www/projet/n8n/setup-ssl.sh");
+            $nginxResult = execCommand("sudo {$n8nDir}setup-ssl.sh");
             $installationLog[] = "Résultat de la configuration Nginx:";
             foreach ($nginxResult['output'] as $line) {
                 $installationLog[] = $line;

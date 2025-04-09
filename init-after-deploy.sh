@@ -4,6 +4,10 @@
 echo "=== INITIALISATION DE N8N SUR OVH ==="
 echo "Début de l'initialisation post-déploiement..."
 
+# Définir le chemin du répertoire n8n
+N8N_DIR="$HOME/www/projet/n8n"
+cd "$N8N_DIR"
+
 # Rendre tous les scripts exécutables
 echo "Mise à jour des permissions des scripts..."
 chmod 755 *.sh || { echo "ERREUR: Impossible de modifier les permissions des scripts."; exit 1; }
@@ -19,9 +23,17 @@ fi
 # Vérifier que Docker Compose est installé
 if ! command -v docker-compose &> /dev/null; then
     echo "ERREUR: Docker Compose n'est pas installé sur ce serveur."
-    echo "Pour installer Docker Compose, exécutez:"
-    echo "curl -L \"https://github.com/docker/compose/releases/download/v2.20.3/docker-compose-\$(uname -s)-\$(uname -m)\" -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose"
-    exit 1
+    
+    # Vérifier si nous avons téléchargé Docker Compose avec l'installateur PHP
+    if [ -f "$N8N_DIR/docker-compose" ]; then
+        echo "Utilisation du Docker Compose téléchargé..."
+        sudo mv "$N8N_DIR/docker-compose" /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+    else
+        echo "Pour installer Docker Compose, exécutez:"
+        echo "curl -L \"https://github.com/docker/compose/releases/download/v2.20.3/docker-compose-\$(uname -s)-\$(uname -m)\" -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose"
+        exit 1
+    fi
 fi
 
 # Exécuter le script d'installation
