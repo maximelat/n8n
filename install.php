@@ -47,6 +47,11 @@ if ($execEnabled) {
     }
 }
 
+// Déterminer si nous sommes sur un hébergement OVH
+$isOVHHosting = (strpos($_SERVER['SERVER_SOFTWARE'] ?? '', 'OVH') !== false) || 
+                (file_exists('/etc/ovhrc')) || 
+                (preg_match('/ovh|kimsufi|soyoustart/i', gethostname() ?? ''));
+
 // État de l'installation
 $installationStatus = [
     'node_installed' => $nodeInstalled,
@@ -93,6 +98,155 @@ EOT;
 // Fonction pour générer une clé d'encryption
 function generateEncryptionKey() {
     return bin2hex(random_bytes(24));
+}
+
+// Fonction pour générer un fichier d'instructions
+function generateInstructionsFile($n8nDir) {
+    $encryptionKey = generateEncryptionKey();
+    $instructionsContent = <<<EOT
+INSTRUCTIONS D'INSTALLATION MANUELLE POUR N8N
+=============================================
+
+En raison des restrictions sur l'hébergement OVH, vous devez compléter l'installation manuellement via SSH.
+Voici les différentes options d'installation :
+
+OPTION 1: INSTALLATION AVEC NPM
+------------------------------
+
+1. Connectez-vous à votre serveur via SSH:
+   ```
+   ssh votre_utilisateur@latry.consulting
+   ```
+
+2. Naviguez vers le répertoire n8n:
+   ```
+   cd ~/www/projet/n8n/
+   ```
+
+3. Installez n8n via npm:
+   ```
+   npm install n8n
+   ```
+
+4. Pour démarrer n8n en mode développement:
+   ```
+   npx n8n start
+   ```
+
+5. Pour un déploiement en production, utilisez PM2:
+   ```
+   npm install -g pm2
+   pm2 start "npx n8n start" --name="n8n"
+   ```
+
+6. Pour configurer n8n pour qu'il démarre automatiquement au redémarrage du serveur:
+   ```
+   pm2 save
+   pm2 startup
+   ```
+   Suivez les instructions affichées par la commande pm2 startup.
+
+
+OPTION 2: INSTALLATION AVEC DOCKER (RECOMMANDÉE)
+-----------------------------------------------
+
+Si Docker est disponible sur votre serveur OVH (VPS, Cloud, etc.), cette méthode est plus simple:
+
+1. Connectez-vous à votre serveur via SSH:
+   ```
+   ssh votre_utilisateur@latry.consulting
+   ```
+
+2. Naviguez vers le répertoire n8n:
+   ```
+   cd ~/www/projet/n8n/
+   ```
+
+3. Créez un fichier docker-compose.yml avec le contenu suivant:
+   ```yaml
+   version: '3'
+   
+   services:
+     n8n:
+       image: n8nio/n8n
+       restart: always
+       ports:
+         - "5678:5678"
+       environment:
+         - N8N_PROTOCOL=https
+         - N8N_HOST=latry.consulting
+         - N8N_PATH=/projet/n8n
+         - N8N_PORT=5678
+         - NODE_ENV=production
+         - WEBHOOK_URL=https://latry.consulting/projet/n8n
+         - ENCRYPTION_KEY={$encryptionKey}
+       volumes:
+         - n8n_data:/home/node/.n8n
+   
+   volumes:
+     n8n_data:
+       external: false
+   ```
+
+4. Lancez n8n avec Docker Compose:
+   ```
+   docker-compose up -d
+   ```
+
+
+COMMANDES UTILES
+---------------
+
+- Pour accéder à n8n depuis votre navigateur:
+  https://latry.consulting/projet/n8n
+
+- Pour arrêter n8n (avec PM2):
+  ```
+  pm2 stop n8n
+  ```
+
+- Pour redémarrer n8n (avec PM2):
+  ```
+  pm2 restart n8n
+  ```
+
+- Pour voir les logs (avec PM2):
+  ```
+  pm2 logs n8n
+  ```
+
+- Pour arrêter n8n (avec Docker):
+  ```
+  docker-compose down
+  ```
+
+- Pour redémarrer n8n (avec Docker):
+  ```
+  docker-compose restart
+  ```
+
+- Pour voir les logs (avec Docker):
+  ```
+  docker-compose logs -f
+  ```
+
+
+RÉSOLUTION DES PROBLÈMES
+-----------------------
+
+Si vous rencontrez des problèmes, vérifiez que:
+- Node.js version 16.9.0 ou supérieure est installé (pour l'installation NPM)
+- NPM version 7.0.0 ou supérieure est installé (pour l'installation NPM)
+- Docker et Docker Compose sont installés (pour l'installation Docker)
+- Le fichier .env contient bien une clé d'encryption valide
+- Le port 5678 est disponible et n'est pas bloqué par un pare-feu
+- Votre configuration Nginx permet l'accès au port 5678
+
+EOT;
+
+    $instructionsFile = $n8nDir . 'INSTRUCTIONS_N8N.txt';
+    file_put_contents($instructionsFile, $instructionsContent);
+    return $instructionsFile;
 }
 
 // Traitement des actions
@@ -165,6 +319,16 @@ EOT;
                     'message' => 'Impossible d\'installer n8n. Vérifiez que Node.js et NPM sont installés et que la fonction exec() est disponible.'
                 ];
             }
+            break;
+            
+        case 'generate_instructions':
+            $instructionsFile = generateInstructionsFile($n8nDir);
+            $actionResult = [
+                'success' => file_exists($instructionsFile),
+                'message' => file_exists($instructionsFile) 
+                    ? 'Instructions générées avec succès dans ' . basename($instructionsFile) 
+                    : 'Erreur lors de la génération des instructions.'
+            ];
             break;
     }
 }
@@ -346,6 +510,14 @@ EOT;
         <div class="tab <?php echo $installationStatus['step'] === 0 ? 'active' : ''; ?>">
             <h2>Vérification des prérequis</h2>
             
+            <?php if ($isOVHHosting): ?>
+            <div class="alert alert-warning" style="background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; margin-bottom: 20px;">
+                <h3 style="margin-top: 0;">⚠️ Hébergement OVH détecté</h3>
+                <p>Attention : Votre site semble être hébergé sur OVH. En raison des restrictions sur l'hébergement OVH, l'installation complète automatique via PHP n'est pas possible.</p>
+                <p>Vous devrez vous connecter à votre serveur via SSH et suivre les instructions générées pour compléter l'installation.</p>
+            </div>
+            <?php endif; ?>
+            
             <div class="status-message">
                 <span class="status status-<?php echo $installationStatus['node_installed'] ? 'ok' : 'error'; ?>"></span>
                 <div>Node.js: <?php echo $nodeInstalled ? 'Installé (version ' . htmlspecialchars($nodeVersion) . ')' : 'Non installé'; ?></div>
@@ -482,6 +654,75 @@ EOT;
         <div class="tab <?php echo $installationStatus['step'] === 3 ? 'active' : ''; ?>">
             <h2>Installation complétée</h2>
             
+            <?php if ($isOVHHosting): ?>
+            <div class="alert alert-warning" style="background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; margin-bottom: 20px;">
+                <h3 style="margin-top: 0;">⚠️ Instructions d'installation manuelle pour OVH</h3>
+                <p>En raison des restrictions sur l'hébergement OVH, vous devez terminer l'installation manuellement via SSH:</p>
+                
+                <h4>Option 1: Installation directe avec NPM</h4>
+                <ol>
+                    <li>Connectez-vous à votre serveur via SSH:
+                        <div class="code-block">ssh votre_utilisateur@latry.consulting</div>
+                    </li>
+                    <li>Naviguez vers le répertoire n8n:
+                        <div class="code-block">cd ~/www/projet/n8n/</div>
+                    </li>
+                    <li>Installez n8n:
+                        <div class="code-block">npm install n8n</div>
+                    </li>
+                    <li>Pour démarrer n8n en arrière-plan:
+                        <div class="code-block">npm install -g pm2 && pm2 start "npx n8n start" --name="n8n"</div>
+                    </li>
+                </ol>
+                
+                <h4>Option 2: Installation avec Docker (recommandée si disponible)</h4>
+                <p>Si Docker est disponible sur votre serveur OVH (VPS, Cloud, etc.), cette méthode est recommandée:</p>
+                <ol>
+                    <li>Connectez-vous à votre serveur via SSH</li>
+                    <li>Naviguez vers le répertoire n8n</li>
+                    <li>Créez un fichier docker-compose.yml (ou utilisez celui du dépôt):</li>
+                    <div class="code-block">
+version: '3'
+
+services:
+  n8n:
+    image: n8nio/n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_PROTOCOL=https
+      - N8N_HOST=latry.consulting
+      - N8N_PATH=/projet/n8n
+      - N8N_PORT=5678
+      - NODE_ENV=production
+      - WEBHOOK_URL=https://latry.consulting/projet/n8n
+      - ENCRYPTION_KEY=<?php echo generateEncryptionKey(); ?>
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:
+    external: false
+                    </div>
+                    <li>Lancez n8n avec Docker Compose:
+                        <div class="code-block">docker-compose up -d</div>
+                    </li>
+                </ol>
+                
+                <p>Une fois l'installation terminée, n8n sera accessible à l'adresse suivante:</p>
+                <div class="code-block">https://latry.consulting/projet/n8n</div>
+                
+                <form method="post" action="?step=3">
+                    <input type="hidden" name="action" value="generate_instructions">
+                    <button type="submit" class="btn">Télécharger les instructions détaillées</button>
+                </form>
+                
+                <?php if (file_exists($n8nDir . 'INSTRUCTIONS_N8N.txt')): ?>
+                <p>Les instructions détaillées sont disponibles ici: <a href="INSTRUCTIONS_N8N.txt" download class="btn">Télécharger</a></p>
+                <?php endif; ?>
+            </div>
+            <?php else: ?>
             <p>Pour démarrer n8n, exécutez la commande suivante dans le terminal :</p>
             
             <div class="code-block">cd <?php echo htmlspecialchars($n8nDir); ?> && npx n8n start</div>
@@ -493,6 +734,7 @@ EOT;
             <p>Accédez à n8n en utilisant l'URL suivante :</p>
             
             <div class="code-block">http://<?php echo htmlspecialchars($_SERVER['HTTP_HOST']); ?>:5678</div>
+            <?php endif; ?>
             
             <div class="tab-buttons">
                 <a href="?step=2" class="btn">Précédent</a>
