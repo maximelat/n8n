@@ -4,7 +4,7 @@ FROM n8nio/n8n:latest
 ENV N8N_PORT=5678
 ENV NODE_ENV=production
 ENV N8N_ENCRYPTION_KEY=votre_clef_de_chiffrement
-ENV WEBHOOK_URL=https://votre-domaine.com
+ENV WEBHOOK_URL=https://latry.consulting/projet/n8n
 ENV DB_TYPE=sqlite
 ENV DB_SQLITE_PATH=/home/node/.n8n/database.sqlite
 

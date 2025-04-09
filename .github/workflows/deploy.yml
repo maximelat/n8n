@@ -17,6 +17,22 @@ jobs:
       with:
         node-version: '18'
         
+    - name: Prepare startup script
+      run: |
+        # Générer une clé de chiffrement aléatoire
+        ENCRYPTION_KEY=$(openssl rand -hex 24)
+        
+        # Mettre à jour les fichiers avec la clé générée
+        sed -i "s/votre_clef_de_chiffrement/$ENCRYPTION_KEY/g" .env.example
+        sed -i "s/votre_clef_de_chiffrement/$ENCRYPTION_KEY/g" Dockerfile
+        sed -i "s/votre_clef_de_chiffrement/$ENCRYPTION_KEY/g" docker-compose.yml
+        
+        # Créer un fichier .env à partir du template
+        cp .env.example .env
+        
+        # Indiquer que les scripts sont prêts à être exécutés
+        touch READY_FOR_DEPLOY
+        
     - name: 📂 FTP Deploy
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
       with:
@@ -25,4 +41,17 @@ jobs:
         password: ${{ secrets.FTP_PASSWORD }}
         local-dir: ./
         server-dir: /www/projet/n8n/
-        dangerous-clean-slate: true 
+        dangerous-clean-slate: true
+        
+    - name: Make scripts executable via FTP (separate upload)
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ftp.cluster029.hosting.ovh.net
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: ./
+        server-dir: /www/projet/n8n/
+        dangerous-clean-slate: false
+        exclude: |
+          **/*
+          !*.sh 

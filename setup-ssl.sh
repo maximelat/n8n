@@ -2,16 +2,10 @@
 
 # Script d'installation des certificats SSL avec Certbot
 
-# Vérification de Certbot
-if ! command -v certbot &> /dev/null
-then
-    echo "Certbot n'est pas installé. Installation en cours..."
-    apt-get update
-    apt-get install -y certbot python3-certbot-nginx
-fi
+# Puisque latry.consulting a déjà HTTPS, nous allons simplement configurer Nginx
 
-# Demande du nom de domaine
-read -p "Entrez votre nom de domaine (exemple: votre-domaine.com): " DOMAIN_NAME
+# Nom de domaine fixe
+DOMAIN_NAME="latry.consulting"
 
 # Vérification de Nginx
 if ! command -v nginx &> /dev/null
@@ -34,7 +28,4 @@ nginx -t
 # Redémarrage de Nginx
 systemctl restart nginx
 
-# Obtention du certificat Let's Encrypt
-certbot --nginx -d $DOMAIN_NAME
-
-echo "Configuration SSL terminée. Votre n8n est maintenant accessible via https://$DOMAIN_NAME" 
+echo "Configuration Nginx terminée. Votre n8n est maintenant accessible via https://$DOMAIN_NAME/projet/n8n" 

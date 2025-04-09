@@ -25,16 +25,15 @@ fi
 # Copie du fichier .env.example vers .env s'il n'existe pas déjà
 if [ ! -f .env ]; then
     cp .env.example .env
-    echo "Fichier .env créé. Veuillez le modifier avec vos valeurs."
-    echo "Exécutez nano .env pour éditer le fichier."
+    echo "Fichier .env créé."
 fi
 
 # Génération d'une clé de chiffrement aléatoire
 ENCRYPTION_KEY=$(openssl rand -hex 24)
 sed -i "s/votre_clef_de_chiffrement/$ENCRYPTION_KEY/g" .env
 
-# Demande pour l'URL du webhook
-read -p "Entrez l'URL de votre domaine (exemple: https://votre-domaine.com): " WEBHOOK_URL
+# URL prédéfinie pour n8n
+WEBHOOK_URL="https://latry.consulting/projet/n8n"
 sed -i "s|https://votre-domaine.com|$WEBHOOK_URL|g" .env
 
 # Démarrage de n8n
@@ -42,5 +41,5 @@ echo "Démarrage de n8n..."
 docker-compose up -d
 
 echo "n8n est maintenant installé et en cours d'exécution."
-echo "Vous pouvez y accéder à l'adresse: $WEBHOOK_URL:5678"
-echo "N'oubliez pas de configurer votre serveur web pour rediriger les requêtes vers le port 5678." 
+echo "Vous pouvez y accéder à l'adresse: $WEBHOOK_URL"
+echo "Veuillez configurer votre serveur web avec le script setup-ssl.sh pour finaliser l'installation." 

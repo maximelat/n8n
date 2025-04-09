@@ -24,7 +24,7 @@ Lorsque vous poussez du code sur la branche `main`, GitHub Actions déploiera au
 
 1. Connectez-vous à votre serveur OVH via SSH :
    ```bash
-   ssh user@votre-serveur-ovh
+   ssh user@latry.consulting
    ```
 
 2. Naviguez vers le répertoire de déploiement :
@@ -32,30 +32,30 @@ Lorsque vous poussez du code sur la branche `main`, GitHub Actions déploiera au
    cd /www/projet/n8n/
    ```
 
-3. Rendez les scripts exécutables :
+3. Les scripts sont déjà exécutables grâce au workflow GitHub Actions. Si vous avez besoin de les rendre exécutables manuellement, utilisez :
    ```bash
-   chmod +x install.sh setup-ssl.sh backup.sh restore.sh
+   chmod 755 *.sh
    ```
 
-4. Exécutez le script d'installation :
+4. Le script d'installation s'exécutera automatiquement lors du déploiement. Si vous avez besoin de l'exécuter manuellement :
    ```bash
    ./install.sh
    ```
-   Ce script vérifiera l'installation de Docker et Docker Compose, créera un fichier `.env` avec une clé de chiffrement aléatoire et vous demandera l'URL de votre domaine pour configurer n8n.
+   Ce script vérifiera l'installation de Docker et Docker Compose, créera un fichier `.env` avec une clé de chiffrement aléatoire et configurera n8n pour utiliser latry.consulting/projet/n8n.
 
-## Étape 4 : Configuration SSL avec Let's Encrypt
+## Étape 4 : Configuration Nginx
 
-1. Exécutez le script de configuration SSL :
+1. Exécutez le script de configuration Nginx :
    ```bash
    sudo ./setup-ssl.sh
    ```
-   Ce script installera Nginx et Certbot si nécessaire, puis configurera votre nom de domaine et obtiendra un certificat SSL Let's Encrypt.
+   Ce script installera Nginx si nécessaire et configurera la redirection vers votre instance n8n.
 
 ## Étape 5 : Vérification
 
 1. Accédez à votre instance n8n via votre navigateur :
    ```
-   https://votre-domaine.com
+   https://latry.consulting/projet/n8n
    ```
 
 2. Vous devriez voir l'interface n8n et pouvoir créer un compte administrateur.
@@ -94,7 +94,7 @@ Pour mettre à jour n8n vers la dernière version :
    cd /www/projet/n8n/
    docker-compose down
    docker-compose up -d
-   ```
+   ``` 
 
 ## Dépannage
 
